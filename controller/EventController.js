@@ -3,10 +3,11 @@ const Event = require('../model/event');
 // Create an event (protected endpoint)
 exports.createEvent = async (req, res) => {
   const { name, date, capacity } = req.body;
+  
 
   // Validate the incoming data
   if (!name || !date || !capacity) {
-    return res.status(400).json({ msg: 'Please provide all fields: name, date, capacity' });
+    return res.status(400).json({ message: 'Please provide all fields: name, date, capacity' });
   }
 
   try {
@@ -15,14 +16,14 @@ exports.createEvent = async (req, res) => {
       date,
       capacity,
       availableSeats: capacity, // Initially, available seats are the same as capacity
-      created_by: req.user.id,
+      createdBy: req.user.id,
     });
-
+    console.log("Request User:", req.user);
     await newEvent.save();
     res.status(201).json(newEvent);
   } catch (err) {
     console.error(err.message);
-    res.status(500).json({ msg: 'Server error' });
+    res.status(500).json({ message: 'Internal Server error' });
   }
 };
 
@@ -42,7 +43,7 @@ exports.getEvents = async (req, res) => {
     const events = await Event.find(filter)
       .skip((page - 1) * limit)  // Pagination: Skip previous pages
       .limit(Number(limit))      // Limit the number of events per page
-      .populate('created_by', 'name email');  // Optionally populate creator details
+      .populate('createdBy', 'name email');  // Optionally populate creator details
     
     const totalEvents = await Event.countDocuments(filter);  // Get the total number of events matching the filter
     
@@ -54,7 +55,7 @@ exports.getEvents = async (req, res) => {
     });
   } catch (err) {
     console.error(err.message);
-    res.status(500).json({ msg: 'Server error' });
+    res.status(500).json({ message: 'Internal Server error' });
   }
 };
 
@@ -66,12 +67,12 @@ exports.updateEvent = async (req, res) => {
   // Validate the event exists
   let event = await Event.findById(id);
   if (!event) {
-    return res.status(404).json({ msg: 'Event not found' });
+    return res.status(404).json({ message: 'Event not found' });
   }
 
   // Ensure the current user is the one who created the event
-  if (event.created_by.toString() !== req.user.id) {
-    return res.status(403).json({ msg: 'You are not authorized to update this event' });
+  if (event.createdBy.toString() !== req.user.id) {
+    return res.status(403).json({ message: 'You are not authorized to update this event' });
   }
 
   // Update event details
@@ -85,7 +86,7 @@ exports.updateEvent = async (req, res) => {
     res.json(event);
   } catch (err) {
     console.error(err.message);
-    res.status(500).json({ msg: 'Server error' });
+    res.status(500).json({ message: 'Internal Server error' });
   }
 };
 
@@ -96,19 +97,19 @@ exports.deleteEvent = async (req, res) => {
   // Validate the event exists
   let event = await Event.findById(id);
   if (!event) {
-    return res.status(404).json({ msg: 'Event not found' });
+    return res.status(404).json({ message: 'Event not found' });
   }
 
   // Ensure the current user is the one who created the event
-  if (event.created_by.toString() !== req.user.id) {
-    return res.status(403).json({ msg: 'You are not authorized to delete this event' });
+  if (event.createdBy.toString() !== req.user.id) {
+    return res.status(403).json({ message: 'You are not authorized to delete this event' });
   }
 
   try {
-    await event.remove();
-    res.json({ msg: 'Event removed' });
+    await event.deleteOne();
+    res.json({ message: 'Event deleted' });
   } catch (err) {
     console.error(err.message);
-    res.status(500).json({ msg: 'Server error' });
+    res.status(500).json({ message: 'Internal Server error' });
   }
 };
